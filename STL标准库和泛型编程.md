@@ -339,7 +339,7 @@ set和map底层都提供了排序功能，红黑树形式存储的键值是有�
 
 ## 分配器及其使用
 
-对于一个分配器，它最重要的作用就是申请和释放内存，对应的方法就是`allocator`和`deallocator`，从下面的VC6所附标准库的源码看来，它的`allocator`和`deallocator`调用了`operator new`和`operator delete`方法，而这两个方法最终也是掉用了C的`malloc`和`free`函数，所以说分配器是对`malloc`和`free`的封装再封装。
+对于一个分配器，它最重要的作用就是申请和释放内存，对应的方法就是`allocator`和`deallocator`，从下面的VC6所附标准库的源码看来，它的`allocator`和`deallocator`调用了`operator new`和`operator delete`方法，而这两个方法最终也是调用了C的`malloc`和`free`函数，所以说分配器是对`malloc`和`free`的封装再封装。
 
 ``` cpp
 template <class _Ty>
