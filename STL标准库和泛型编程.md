@@ -339,7 +339,51 @@ set和map底层都提供了排序功能，红黑树形式存储的键值是有�
 
 ## 分配器及其使用
 
-对于每个容器，我们是看不到其背后的内存分配过程的，因为容器作为一个工具，使用者不应该去关注到其内存是如何分配的，这些工作全部转交给分配器去完成，甚至在声明一个容器时，都不用选择分配器，而是采用默认的分配器去执行。
+对于一个分配器，它最重要的作用就是申请和释放内存，对应的方法就是`allocator`和`deallocator`，从下面的VC6所附标准库的源码看来，它的`allocator`和`deallocator`调用了`operator new`和`operator delete`方法，而这两个方法最终也是掉用了C的`malloc`和`free`函数，所以说分配器是对`malloc`和`free`的封装再封装。
+
+``` cpp
+template <class _Ty>
+class allocator {
+public:
+    typedef _SIZT size_type;
+    typedef _PDFT difference_type;
+    typedef _Ty _FARQ *pointer;
+    typedef _Ty value_type;
+    pointer allocate(size_type _N, const void *) {
+        return (_Allocator((difference_type)_N, (pointer)0));
+    }
+    void deallocator(void _FARQ *_P, size_type) {
+		operator delete(_P);
+    }
+}
+=============================================================
+//上面用到的_Allocator定义
+template <class _Ty> inline
+_Ty _FARQ *_Allocator(_PDFT _N, _Ty _FARQ *) {
+    if(_N < 0) _N = 0;
+    return ((_Ty _FARQ *)operator new((_SIZT)_N * sizeof(_Ty)));
+}
+=============================================================
+// operator new对malloc的封装
+// ...\vc98\crt\src\newop2.cpp
+void *operator new(size_t size, const std::nothrow_t&) _THROW0() {
+    void *p;
+    while((p=malloc(size))==0) {
+        _TRY_BEGIN
+		if(_callnewh(size)==0) break;
+        _CATCH(std::bad_alloc) return(0);
+        _CATCH_END
+    }
+    return (p);
+}
+// <new.h> of CB5
+inline void* _RTLENTRY operator new(size_t size, const std::nothrow_t&) {
+    size = size ? size : 1;
+    return malloc(size);
+}
+```
+
+对于每个容器，我们是看不到其背后的内存分配过程的，因为容器作为一个工具，使用者不用去关注到其内存是如何分配的，这些工作全部转交给分配器去完成，甚至在声明一个容器时，都不用选择分配器，而是采用默认的分配器去执行。
 
 如下是容器vector的模板头代码
 
