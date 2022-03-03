@@ -683,3 +683,75 @@ struct __list_Iterator {
 <img src=".\picture\深入探索List2.png"/>
 
 除了上面说的一点不同，G4.9版本还将指向前一个节点和后一个节点的指针类型由`void*`改为`_List_node_base*`，并通过继承改善节点的结构。
+
+
+
+## 迭代器的设计原则和Iterator Traits的作用与设计
+
+
+
+### Iterator需要遵循的原则
+
+<img src="./picture/Iterator需要遵循的原则.png">
+
+算法函数在运行时，需要通过Iterator的类型去抉择使用何种迭代形式的算法更好，就需要知道迭代器的类型，那么就需要知道iterator的category，上图中用到的是iterator_traits来获取一个迭代器的category。另外还可以看到算法还询问了迭代器的value_type以及difference_type，value_type很容易理解，就是元素的数据类型，而difference_type表示的是两个迭代器之间的距离的数据类型，它可能是个unsigned long或其他。
+
+``` cpp
+// G2.9
+template <class T, class Ref, class Ptr>
+struct __list_iterator {
+    typedef bidirectional_iterator_tag iterator_category;
+    typedef T value_type;
+    typedef Ptr pointer;
+    typedef Ref reference;
+    typedef ptrdiff_t difference_type;
+    ...
+}; 	
+// G4.9
+template <typename _Tp>
+struct __List_iterator {
+    typedef std::bidirectional_iterator_tag iterator_category;
+    typedef _Tp value_type;
+    typedef _Tp* pointer;
+    typedef _Tp& reference;
+    typedef ptrdiff_t difference_type;
+    ...
+}; 	
+```
+
+上面是两个版本的链表的迭代器源码，它反映了Iterator需要遵循的一个原则是`Iterator必须提供5种associated types`，这样算法在执行时，就能够去询问传入迭代器的iterator_category，value_type等其他associated_type。算法的代码示例如下：
+
+``` cpp
+template <typename T>
+inline void
+algorithm(T first, T last) {
+	T::iterator_category
+	T::pointer
+	T::reference
+	T::value_type
+	T::difference_type
+    ...
+}
+```
+
+上面的算法代码我可以想到的是`sort()`函数，它可以传入`vector<int>::begin()`和`vector<int>::end()`，然后就可以把其中的所有元素都按从小到大排序。这样在算法询问各个`associated types`时是没问题的，因为`vector<int>`已经定义好了各个类型。但是有时候，我们使用`sort()`函数，传入的是两个指针，比如一个数组`int a[10]`，我们传入的参数是`a`和`a+10`。指针属于一个退化的迭代器，它是没有5个`associated types`的，这个问题就得交由下面写到的Traits来解决了。
+
+
+
+### Traits 特性、特征、特质
+
+Iterator Traits用于分离class iterators和non-class iterators
+
+Traits这个机器，必须能够有能力分辨获得的iterator是class iterators，还是non-class iterators，然后萃取出相应的5个`associated types`。这就可以用到之前讲到的模板偏特化来实现，见下图。
+
+<img src="./picture/Traits的原理.png" width="70%" style="float:left">
+
+通过使用`iterator_traits<T>`这个模板类做一个中介的角色，如果是询问一个class iterator的value_type，那么它会通过模板1，返回这个class iterator的value_type，而如果是询问一个non-class iterator的value_type，例如`int *`，那么就会通过偏特化的性质，匹配到模板2，返回指针指向元素的类型`int`作为value_type。
+
+需要注意的是，如果询问的是`const T*`的value_type，返回的仍然是T，而不是const T。因为value_type的主要目的是用来声明变量，而声明一个无法被赋值的变量没什么用，所以iterator(即便是constant iterator)的value_type，不应加上const。
+
+
+
+### 完整的iterator_traits
+
+<img src="./picture/完整的iterator_traits.png" width="70%" style="float:left">
