@@ -755,3 +755,38 @@ Traits这个机器，必须能够有能力分辨获得的iterator是class iterat
 ### 完整的iterator_traits
 
 <img src="./picture/完整的iterator_traits.png" width="70%" style="float:left">
+
+
+
+## 深度探索vector
+
+vector是一个动态增长的数组array，它支持随机访问和动态内存扩充。为了同时实现这两个特性，它在插入元素时，如果当前的空间无法储存新的元素，那么它会在内存中找一块当前空间两倍大小的连续内存，然后将所有的元素搬过去，然后插入新元素。下面用图来描述了这个过程。
+
+<img src="./picture/容器vector扩充空间.png">
+
+上图中的start指向了内存的头部，finish指向了最后一个元素的下一个位置，end_of_storage指向整块内存的尾部。右边部分框框内是G2.9版本的代码，其中size()的结果是由两个函数调用的结果相减得到的，而不采用`finish - start`的原因可能是为了未来修改设计的同时保证结果的正确性。
+
+<img src="./picture/容器vector之push_back.png">
+
+浏览vector的`push_back`源码可以看到，在插入一个新元素时，vector会先检查容器是否已满，如果已满了就调用`insert_aux(end(),x)`来扩充内存空间。
+
+<img src="./picture/容器vector之push_back_else.png">
+
+在无内存空间容纳新元素时，首先计算需要分配的新内存空间大小。
+
+在初始化一个空vector容器后，vector的capacity为0，而每次重新分配内存，内存空间大小都为变为当前的两倍。所以需要对第一次扩充作个特殊处理`old_size != 0 ? 2 * old_size : 1`。
+
+接着通过allocator去分配计算出的大小的内存空间。
+
+然后就是是执行上图中黄色框的代码，它会将原vector中的内容拷贝到新vector中，因为vector插入新元素并不一定是插入到vector的尾部，还可以通过`insert`函数插入到vector的中间部分，所以整个复制步骤应该是`copy插入元素的前部分 -> 插入新元素 -> copy插入元素的后部分`。
+
+最后就是释放原vector的空间，调整迭代器指向新vector。
+
+<img src="./picture/容器vector之G4.9.png">
+
+上图是G4.9的vector设计，与G2.9相比要更为复杂，在G2.9里，vetor的iterator类型很容易就可以看出是`T*`。
+
+但到了G4.9，iterator的类型是`__normal_iterator<pointer,vector>`，然后查找`__normal_iterator`的模板定义，发现`_M_current`的类型是`pointer`。而`pointer`的类型在`vector`里的定义是`__Base::pointer`，接着又得到vector的父类`_Vector_base`中找到`pointer`的类型是`__alloc_traits<_Tp_alloc_type>`，最后在`allocator`中找到了`typedef _Tp* pointer`，从而确定vector的iterator类型是`_Tp*`。
+
+这一设计舍近求远，使得整个结构更难去理解。
+
