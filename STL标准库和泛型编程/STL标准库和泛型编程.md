@@ -821,3 +821,65 @@ struct array {
 <img src="./picture/容器array_G4.9.png">
 
 上图右下角也可以看到array对`operator[]`和`at`成员函数也是交由`_array_traits`来实现的。两者都可以实现对数组的随机访问，其区别在于有无越界检查。
+
+
+
+## 深度探索deque  & queue & stack
+
+deque容器是一个双端队列，两头都能插入元素和弹出元素，它对外宣称是一个连续的、能够随机访问的容器，其实际实现上是通过一个个的buffer拼接而成。
+
+下图可以看到，deque容器存在一个map表，表中记录了每个buffer的首地址。
+
+其迭代器也设计成四个指针，分别指向当前位置cur、buffer的首部地址first、buffer的尾部地址last以及当前buffer在map表中的位置。
+
+<img src="./picture/深度探索deque容器_图示.png">
+
+从下图的代码中我们可以了解到，deque容器的buffer大小是可以设置的，其默认值为0。
+
+但并不是说默认的BufSize就是0，右上角的灰色框内会对BufSize进行一个判断，0仅代表其使用默认的预设，该预设会根据deque储存的元素大小而变化。
+
+如果一个元素的大小大于等于512个字节，那么一个buffer就只存储一个元素，其余情况一个buffer就存储size_t(512/sz)个元素。
+
+<img src="./picture/深度探索deque容器_代码.png">
+
+下面是deque容器在指定位置插入元素的函数，在任意位置插入新元素，势必要移动其他元素的位置，为了让代价最小，它比较了插入位置前的元素个数和插入位置后的元素个数，哪边更少移哪边。
+
+首先判断的是插入位置是否是deque的最前端或最后端，如果是这样就无需移动其他元素，直接交由`push_front()`和`push_back()`解决。若是安插在deque的中间位置，则会调用insert_aux这个辅助函数。
+
+辅助函数将安插位置前的元素个数和整个容器元素的个数的一半进行比较，若更少则代表前面的元素较少，否则就是后面的元素较少。
+
+``` cpp
+// 在position处安插一个元素，其值为x
+iterator insert(iterator position, const value_type& x) {
+    if(position.cur == start.cur) { // 如果安插点是deque的最前端
+        push_front(x);				// 交给push_front()做
+        return start;
+    }else if(position.cur == finish.cur) { 	// 如果安插点是deque的最尾端
+        push_back(x);						// 交给push_back()做
+        iterator tmp = finish;
+        --tmp;
+        return tmp;
+    }else {
+        return insert_aux(position, x);
+    }
+}
+
+template <class T, class Alloc, size_t BufSize>
+typename deque<T, Alloc, BufSize>::iterator
+deque<T, Alloc, BufSize>::insert_aux(iterator pos, const value_type& x) {
+    difference_type index = pos - start;	// 安插点之前的元素个数
+    value_type x_copy = x;
+    if(index < size() / 2) {				// 如果安插点之前的元素个数较少
+        push_front(front());				// 在最前端加入与第一个元素同值的元素
+        ...
+		copy(front2, pos1, front1);			// 元素搬移
+    }else {									// 如果安插点之后的元素个数较少
+        push_back(back());					// 在尾端加入与最末端元素同值的元素
+        ...									
+        copy_backward(pos, back2, back1);	// 元素搬移
+    }
+    *pos = x_copy;							// 在安插点上设定新值
+    return pos;
+}
+```
+
