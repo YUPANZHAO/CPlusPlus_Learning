@@ -790,3 +790,34 @@ vector是一个动态增长的数组array，它支持随机访问和动态内存
 
 这一设计舍近求远，使得整个结构更难去理解。
 
+
+
+## 深度探索array
+
+把数组包装成array，那么它就要遵循容器的规则，提供iterator迭代器，而这个迭代器就要提供五种相应的`associated types`，以便于算法去询问一些必要的信息，让算法决定采取哪种优化的动作。下面是G2.9版本的array源码：
+
+``` cpp
+template <typename _Tp, std::size_t _Nm>
+struct array {
+    typedef _Tp		value_type;
+    typedef _Tp*	pointer;
+    typedef _Tp&	iterator;
+    
+    // Support for zero-sized arrays mandatory
+    value_type _M_instance[_Nm ? _Nm : 1];
+    
+    iterator begin() {
+        return iterator(&_M_instance[0]);
+    }
+    iteator end() {
+        return iterator(&_M_instance[_Nm]);
+    }
+    ...
+};
+```
+
+接着下面的是G4.9版本的array源码，在声明数组的时候，其数据类型为`_AT_Type::_Type`，变量名为`_M_elems`，后面没有中括号和元素个数的。这是通过`_array_traits`萃取机实现的，左下角的`typedef _Tp _Type[_Nm]`，定义了一个大小固定为`_Nm`的数组类型。
+
+<img src="./picture/容器array_G4.9.png">
+
+上图右下角也可以看到array对`operator[]`和`at`成员函数也是交由`_array_traits`来实现的。两者都可以实现对数组的随机访问，其区别在于有无越界检查。
