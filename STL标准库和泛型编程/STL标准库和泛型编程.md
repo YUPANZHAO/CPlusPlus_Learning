@@ -883,3 +883,38 @@ deque<T, Alloc, BufSize>::insert_aux(iterator pos, const value_type& x) {
 }
 ```
 
+deque中，迭代器要移动，即执行`operator++`或`operator--`操作，就需要对cur指向的位置进行判断。
+
+例如执行`operator++`操作，那么就要判断移动后cur是否等于last，以决定是否让当前迭代器指向中控区的下一个位置。
+
+``` cpp
+self& operator++() {
+    ++cur;
+    if(cur == last) {
+        set_node(node + 1);
+        cur = first;
+    }
+    return *this;
+}
+
+void set_node(map_pointer new_node) {
+    node = new_node;
+    first = *new_node;
+    last = first + difference_type(buffer_size());
+}
+```
+
+同理执行`operator--`也是类似的做法。这样的做法让使用者感受到了连续的内存空间。
+
+另外需要了解的是，deque的中控中心map，它实际上是一个vector，在map不够用的时候，这个vector会扩充，空间会变为原来的两倍，同时，它把原map中的元素都放置在新map的中间位置，为头尾插入元素时留有更多的余地。
+
+有了deque，就可以衍生出queue和stack。它们的功能都是deque的子集，下面是queue和stack的模板头代码。
+
+``` cpp
+template <class T, class Sequence=deque<T> >
+```
+
+可以发现，queue和stack默认是以deque作为底层容器的，所有的实现都是基于deque，所以queue和stack实质上应该是容器的适配器。并且，我们可以根据自己需要更换底层容器。例如通过`queue<int, list<int>>`将底层容器换做list。
+
+
+
