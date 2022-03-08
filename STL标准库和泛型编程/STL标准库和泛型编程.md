@@ -918,3 +918,58 @@ template <class T, class Sequence=deque<T> >
 
 
 
+##  深度探索RB_tree
+
+Red-Black tree(红黑树)是平衡二叉搜索树中常被使用的一种。平衡二叉搜索树的特征：排列规则有利于search和insert，并保持适度平衡，即无任何节点过深。
+
+rb_tree提供“遍历操作”及iterators。按正常规则(++ite)遍历，便能获得排序状态(sorted)。
+
+我们不应使用rb_tree的iterator改变元素值(因为元素有及其严谨的排列规则)。编程层面并未阻止此事。如此设计是正确的，因为rb_tree即将为set和map服务(做底部支撑)，而map允许元素的data被改变，只有元素的key才是不可改变的。
+
+rb_tree提供两种insertion操作：insert_unique()和insert_equal()。前者表示节点的key一定在整个tree中是独一无二的，否则安插失败；后者表示节点的key可重复。
+
+```cpp
+template <	class Key,
+			class Value,
+			class KeyOfValue,
+			class Compare,
+			class Alloc = alloc>
+```
+
+以上是rb_tree的模板头代码:
+
+* Key表示红黑树的键的数据类型;
+
+* Value表示键值对的数据类型(其中包含了Key和Data);
+* KeyOfValue是一个仿函式，能够从Value中提取出Key来;
+* Compare定义了两个Value之间的大小关系；
+* Alloc是分配器，默认为alloc；
+
+下面是一个rb_tree的一个实例：
+
+``` cpp
+rb_tree<int,
+		int,
+		identity<int>,
+		less<int>,
+		alloc>
+myTree;
+```
+
+其中的identity就是一个仿函式，能够从一个Value中提取出Key。
+
+而less<int>也是一个仿函数，定义两个Value之间的关系规则。
+
+它们的实现代码如下：
+
+``` cpp
+template >class T>
+struct identity : public unary_function<T,T> {
+    const T& operator() (const T& x) const { return x; }
+}
+template >class T>
+struct less : public binary_function<T,T,bool> {
+    bool operator() (const T& x, const T& y) const { return x < y; }
+}
+```
+
