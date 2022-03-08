@@ -973,3 +973,24 @@ struct less : public binary_function<T,T,bool> {
 }
 ```
 
+
+
+## 深度探索set & multiset
+
+set/multiset以rb_tree位底层结构，因此有"元素自动排序"的特性。排序的依据是key，而set/multiset元素的value和key是合二为一的。
+
+set/multiset提供"遍历"操作及iterators。按正常规则(++ite)遍历，便能获得排序状态(sorted)。
+
+我们无法使用set/multiset的iterators改变元素值(因为key有其严谨的排列规则)。set/multiset的iterator是其底部的RB_tree的const iterator，就是为了禁止user对元素赋值。
+
+set元素的key必须独一无二，因此其insert()用的是rb_tree的insert_unique()。
+
+multiset元素的key可以重复，因此其insert()用的是rb_tree的insert_equal()。
+
+<img src="./picture/容器set.png">
+
+上图中可以看到set内部是采用rb_tree作为底层结构，其所有操作都是呼叫了底层红黑树的方法，所以set也可以理解为一个容器适配器。
+
+到了VC6，不提供identity()了，所以set和map在创建rb_tree传的KeyOfValue参数就有所变化，见下图。
+
+<img src="./picture/容器set_VC6.png">
