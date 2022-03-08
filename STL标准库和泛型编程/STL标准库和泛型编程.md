@@ -942,7 +942,7 @@ template <	class Key,
 
 * Value表示键值对的数据类型(其中包含了Key和Data);
 * KeyOfValue是一个仿函式，能够从Value中提取出Key来;
-* Compare定义了两个Value之间的大小关系；
+* Compare定义了两个Key之间的大小关系；
 * Alloc是分配器，默认为alloc；
 
 下面是一个rb_tree的一个实例：
@@ -958,7 +958,7 @@ myTree;
 
 其中的identity就是一个仿函式，能够从一个Value中提取出Key。
 
-而less<int>也是一个仿函数，定义两个Value之间的关系规则。
+而less<int>也是一个仿函数，定义两个Key之间的关系规则。
 
 它们的实现代码如下：
 
