@@ -1103,3 +1103,80 @@ inline size_t __str_hash_string(const char8 s) {
 创建模板示例时传入的第三个参数是HashFcn，用的是标准库提供的hash<>，其实现是通过偏特化完成的，最终调用了`__str_hash_string`来计算哈希值，计算哈希值的HashFcn可以随意设计，只要让计算出的结果足够混乱，也可以根据Key的性质，专门设计一个HashFcn，总之最终的目的就是减少哈希冲突的次数。
 
  
+
+## 各类Iterator的分类(iterator_category)
+
+迭代器一共有五种分类：
+
+* **input_iterator_tag**，其代表有istream_iterator
+* **output_iterator_tag**，其代表有ostream_iterator
+* **forward_iterator_tag**，其代表有forward_list、unordered_set、unordered_multiset、unordered_map、...
+* **bidirectional_iterator_tag**，其代表有set、multiset、map、multimap、...
+* **random_access_iterator_tag**，其代表有array、vector、deque、...
+
+``` mermaid
+graph TB
+	A["input_iterator_tag"]
+	B["forward_iterator_tag"]-->A
+	C["bidirectional_iterator_tag"]-->B
+	D["random_access_iterator_tag"]-->C
+	E["output_iterator_tag"]
+```
+
+上图是iterator之间的继承关系图，input_iterator_tag是基类，其他迭代器都是一层层继承下来的。
+
+想要通过程序输出iterator的category，可以调用以下代码：
+
+``` cpp
+#include <iostream>
+#include <typeinfo> // typeid
+#include <vector>
+#include <forward_list>
+#include <set>
+#include <deque>
+ 
+using namespace std;
+
+int main() {
+    cout << typeid(vector<int>::iterator).name() << endl;  
+    cout << typeid(set<int>::iterator).name() << endl;  
+    cout << typeid(forward_list<int>::iterator).name() << endl;
+    cout << typeid(deque<int>::iterator).name() << endl;    
+    return 0;
+}
+/*
+N9__gnu_cxx17__normal_iteratorIPiSt6vectorIiSaIiEEEE
+St23_Rb_tree_const_iteratorIiE
+St18_Fwd_list_iteratorIiE
+St15_Deque_iteratorIiRiPiE
+*/
+```
+
+在G4.9版本，各类的iterator都会通过公有继承一个名叫"iterator"的结构体，里面仅有iterator的五个`associated types`，这样的做法让迭代器的实现更有结构，也可以少打几个字哈哈。代码如下：
+
+```cpp
+template <typename _Category,
+          typename _Tp,
+          typename _Distance = ptrdiff_t,
+          typename _Pointer = _Tp*,
+          typename _Reference = _Tp&>
+struct iterator {
+	typedef _Category iterator_category;
+	typedef _Tp value_type;
+	typedef _Distance difference_type;
+	typedef _Pointer pointer;
+	typedef _Reference reference;
+};
+===========================================
+template <typename _Tp,
+          typename _CharT = char,
+          typename _Traits = char_traits<_CharT>,
+          typename _Dist = ptrdiff_t>
+class istream_iterator
+: public iterator<input_iterator_tag, _Tp, _Dist, const Tp*, const Tp&> {
+    ...
+}
+```
+
+
+
