@@ -966,11 +966,11 @@ myTree;
 template >class T>
 struct identity : public unary_function<T,T> {
     const T& operator() (const T& x) const { return x; }
-}
+};
 template >class T>
 struct less : public binary_function<T,T,bool> {
     bool operator() (const T& x, const T& y) const { return x < y; }
-}
+};
 ```
 
 
@@ -994,3 +994,112 @@ multiset元素的key可以重复，因此其insert()用的是rb_tree的insert_eq
 到了VC6，不提供identity()了，所以set和map在创建rb_tree传的KeyOfValue参数就有所变化，见下图。
 
 <img src="./picture/容器set_VC6.png">
+
+
+
+## 深度探索map & multimap
+
+map/multimap与上文说到的set/multiset有很多的相同点，如都是采用rb_tree作为底层结构、提供遍历操作、无法修改key值等，其不同点在于它可以改变元素的data。
+
+map/multimap内部自动将user指定的key设定为const，如此便能禁止user对元素key赋值。从如下对value_type的定义可以看出，在Key前加上const，从而实现对key进行限定，使其无法被user修改。
+
+``` cpp
+typedef pair<const Key, T> value_type;
+```
+
+和set/multiset一样，在VC6版本中，并不提供像G2.9版本里的select1st<value_type>(KeyOfValue)了，所以就得自己实现，下面的仿函式能够从pair<>中提取出第一个元素，在map容器中，第一个元素就是value_type的key值。代码如下:
+
+``` cpp
+struct _Kfn : public unary_function<value_type, _K> {
+    const _K& operator() (const value_type& _X) const {
+        return (_X.first);
+    }
+};
+```
+
+另外需要注意的是，对于map，提供了独特的`operator[]`对元素进行插入，而在multimap是不允许的，只能够用insert()来插入元素。
+
+
+
+## 深度探索hashtable
+
+hashtable是一张表，存储了一个个的元素，通过hashFunction能够把一个元素转换成一个数值，以便于快速定位到hashtable上的一个位置，从而找到这个元素。这样的话，hashtable就需要一块连续的空间做到随机访问，也就意味着当hashFunction转换的数值过大时，没有足够的空间做到“一个萝卜一个坑”。这是很常见的情况，所以我们可以通过取余数的方法，让hashFunction求得的值落在一个适当的范围内。那么这就引发了另一个问题，即“哈希冲突”。
+
+解决“哈希冲突”是一门学问，它会直接影响到hashtable的效率。比较常见的解决办法是用一个链表把哈希值相同的元素链接起来，需要注意的细节是，一般情况，当元素的个数等于hashtable的大小(bucket的个数)时，hashtable会自动进行扩充，所有的数据都要重新计算。(bucket的个数永远大于元素的个数)
+
+hashtable的大小一开始默认是53(一个素数)，每一次扩充都会变为离当前的hashtable大小的两倍最近的素数。例如53的两倍是106，距离106最近的素数是97，所以hashtable的大小会被扩充为97，原hashtable中的所有元素都会重新计算哈希值，然后用97取余数，得到bucket的编号。
+
+以下是hashtable的源码：
+
+``` cpp
+template <	class Value, class Key, class HashFcn,
+			class ExtractKey, class EqualKey,
+			class Alloc = alloc>
+class hashtable {
+public:
+    typedef HashFcn		hasher;
+    typedef EqualKey	key_equal;
+    typedef size_t		size_type;
+   
+private:
+    hasher		hash;
+    key_equal	equals;
+    ExtractKey	get_key;
+    
+    typedef __hashtable_node<Value> node;
+    
+    vector<node*, Alloc> buckets;
+    size_type num_elements;
+public:
+    size_type bucket_count() const { return buckets.size(); }
+    ...
+};
+
+...
+struct __hashtable_iterator {
+    ...
+    node* cur;
+    hashtable* ht;
+};
+```
+
+上方的`__hashtable_iterator`可以发现，为了实现iterator的`operator++`、`operator--`等功能，需要有一个`node*`指针指向当前的元素，一个`hashtable*`指针指向这个元素所在bucket的位置，这样才能在cur++后是null的情况下，找到下一个bucket，从而指向正确的位置。
+
+下面是使用一个hashtable的示例：
+
+``` cpp
+hashtable<	const char*,
+			const char*,
+			hash<const char*>,
+			identity<const char*>,
+			eqstr,
+			alloc>
+ht(50, hash<const char*>(), eqstr);
+
+ht.insert_unique("kiwi");
+ht.insert_unique("plum");
+ht.insert_unique("apple");
+======================================
+struct eqstr {
+    bool operator() (const char* s1, const char* s2) const {
+        return strcmp(s1, s2) == 0;
+    }
+};
+======================================
+// 泛化
+template <class Key> struct hash {};
+// 特化
+template<> struct hash<const char*> {
+	size_t operator() (const char*) const { return __stl_hash_string(s); }  
+};
+inline size_t __str_hash_string(const char8 s) {
+    unsigned long h = 0;
+    for (; *s; ++s)
+        h = 5*h + *s;
+    return size_t(h);
+}
+```
+
+创建模板示例时传入的第三个参数是HashFcn，用的是标准库提供的hash<>，其实现是通过偏特化完成的，最终调用了`__str_hash_string`来计算哈希值，计算哈希值的HashFcn可以随意设计，只要让计算出的结果足够混乱，也可以根据Key的性质，专门设计一个HashFcn，总之最终的目的就是减少哈希冲突的次数。
+
+ 
