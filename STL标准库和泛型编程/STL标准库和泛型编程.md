@@ -1180,3 +1180,41 @@ class istream_iterator
 
 
 
+## iterator_category对算法的影响
+
+在设计STL模板算法时，有时候算法要根据传入的迭代器的类型(category)选择更优的实现方式。
+
+以`distance`为例，如果传入的是一个`random_access_iterator_tag` ，那么在计算两个迭代器之间的距离时，只需要进行`operator-`操作即可，因为其空间是连续的，可以直接计算出结果。而对于其他空间不连续的迭代器，就只能够一个个得统计出结果。
+
+代码如下：
+
+``` cpp
+template <class InputIterator>
+inline iterator_traits<InputIterator>::difference_type
+__distance(InputIterator first, InputIterator last, input_iterator_tag) {
+    iterator_traits<InputIterator>::difference_type n = 0;
+    while(first != last) {
+        ++first; ++n;
+    }
+    return n;
+}
+template <class RandomAccessIterator>
+inline iterator_traits<RandomAccessIterator>::difference_type
+__distance(RandomAccessIterator first, RandomAccessIterator last, random_access_iterator_tag) {
+    return last - first;
+}
+============================================
+template <class InputIterator>
+inline iterator_traits<InputIterator>::difference_type
+distance(InputIterator first, InputIterator last) {
+    typedef typename iterator_traits<InputIterator>::iterator_category category;
+    return __distance(first, last, category());
+}
+```
+
+在`distance()`中，`category`后加了一对括号，其作用是创建一个临时对象，使其能够匹配到上方的"特化"版本的__distance。(function template没有所谓的特化，这里用的是重载手法)，这也是为什么要将iterator_category设计成类的原因。
+
+下图是copy算法根据iterator的category做出的对算法实现上的重载。不断将传入的参数类型进行细分，选择最适合的、最快速的算法。
+
+<img src="./picture/copy算法.png">
+
