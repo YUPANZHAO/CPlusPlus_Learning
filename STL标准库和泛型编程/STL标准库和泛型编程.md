@@ -1218,3 +1218,125 @@ distance(InputIterator first, InputIterator last) {
 
 <img src="./picture/copy算法.png">
 
+
+
+## 仿函数和适配器的使用
+
+
+
+### 仿函数
+
+仿函数可以分为好几类，如：算术类、逻辑运算类、相对关系类等。它们大多数都是写成一个结构体的形式，并且底层都继承了`binary_funtion`或`unary_function`结构体，其区别在于前者是两个参数的仿函数，后者是一个参数的仿函数。其代码如下：
+
+``` cpp
+template <class Arg, class Result>
+struct unary_function {
+    typedef Arg argument_type;
+    typedef Result result_type;
+};
+template <class Arg1, class Arg2, class Result>
+struct binary_function {
+    typedef Arg1 first_argument_type;
+    typedef Arg2 second_argument_type;
+    typedef Result result_type;
+};
+```
+
+这两个基类的作用和迭代器的iterator_traits其作用是一致的，就是为了让仿函数或适配器能够询问各参数和返回值的类型。
+
+
+
+### 适配器
+
+#### bind2nd
+
+有一个简单的例子，要计算一个容器vector中，元素的值小于50的个数有多少。我们可以用到算法库提供的`count_if`函数，需要传入容器的两个迭代器`begin()`和`end()`，还需要传入一个仿函数，返回值如果为true，计数就加一。这里我们使用仿函数`less<int>`，`less<int>`能够比较传入的两个参数的大小，如果`x<y`，就返回true，反之返回false。所以我们需要一个适配器将50这个数绑定到`less<int>`的第二参数`y`上，这个适配器就是`bind2nd`。其代码如下：
+
+``` cpp
+count_if(c.begin(), c.end(), bind2nd(less<int>(), 50));
+```
+
+bind2nd的源码如下：
+
+``` cpp
+template <class Operation, class T>
+inline binder2nd<Operation> bind2nd(const Operation& op, const T& x) {
+    typedef typename Operation::second_argument_type arg2_type;
+    return binder2nd<Operation>(op, arg2_type(x));
+}
+=====================================================
+typedef <class Operation>
+class binder2nd : public unary_function<typename Operation::first_argument_type, typename Operation::result_type> {
+protected:
+    Operation op;
+    typename Operation::second_argument_type value;
+public:
+    binder2nd(const Operation& x, const typename Operation::second_argument_type& y):op(x),value(y) {}
+    typename Operation::result_type operator() (const typename Operation::first_arguemnt_type& x) const {
+        return op(x, value);
+    }
+};
+```
+
+真正的绑定适配器其实是`binder2nd`，但是因为其使用起来对用户来说较为不友好，所以通过函数`bind2nd`包装起来，但这也就意味着`bind2nd`也是个适配器。在通过`bind2nd`返回生成的临时对象`binder2nd`时，将`x`通过`arg2_type`进行转换，如果转换失败就表明`x`的值不能与容器中的其他元素进行比较，并输出报错信息。
+
+
+
+#### bind
+
+C++11中提供了新型的适配器bind，其头文件为`#include <functional>`，它可以绑定:
+
+* **functions**
+* **function objects**
+* **member functions**（_1必须是某个object地址）
+* **data members**（_1必须是某个object地址）
+
+其使用方式如下代码所示:（其中的`_1`和`_2`是占位符）
+
+``` cpp
+double my_divide(double x, double y) {
+    return x / y;
+}
+struct MyPair {
+	double a, b;
+    double multiply() { return a * b; } // member function 其实有个参数argument: this
+};
+===============================================
+using namespace std::placeholders; // add visibility of _1, _2, _3, ...
+
+// binding functions
+auto fn_five = bind(my_divide, 10, 2); // return 10 / 2
+cout << fn_five() << '\n'; // 5
+
+auto fn_half = bind(my_divide, _1, 2); // return x / 2
+cout << fn_half(10) << '\n'; // 5
+
+auto fn_invert = bind(my_divide, _2, _1); // return y / x
+cout << fn_invert(10, 2) << '\n'; // 0.2
+
+auto fn_rounding = bind<int>(my_divide, _1, _2); // return int(x / y)
+cout << fn_rounding(10, 3) << '\n'; // 3
+
+// binding members
+MyPair ten_two {10, 2};
+// member function 其实有个参数argument: this
+auto bound_memfn = bind(&MyPair::multiply, _1); // return x.multiply()
+cout << bound_memfn(ten_two) << '\n'; // 20
+
+auto bound_memdata = bind(&MyPair::a, ten_two); // return ten_two.a
+cout << bound_memdata() << '\n'; // 10
+
+auto bound_memdata2 = bind(&MyPair::b, _1); // return x.b
+cout << bound_memdata2(ten_two) << '\n'; // 2
+
+vector<int> v {15, 37, 94, 50, 73, 58, 28, 98};
+int n = count_if(v.cbegin(), v.cend(), not1(bind2nd(less<int>(), 50)));
+cout << "n = " << n << '\n'; // 5
+// cbegin()和cend()是C++11新增的，它们返回一个const的迭代器，不能用于修改元素
+auto fn_ = bind(less<int>(), _1, 50);
+cout << count_if(v.cbegin(), v.cend(), fn_) << '\n';
+cout << count_if(v.cbegin(), v.cend(), bind(less<int>(), _1, 50)) << '\n'; // 3
+```
+
+
+
