@@ -1340,3 +1340,39 @@ cout << count_if(v.cbegin(), v.cend(), bind(less<int>(), _1, 50)) << '\n'; // 3
 
 
 
+## 迭代器适配器
+
+### reverse_iterator
+
+``` cpp
+reverse_iterator
+rbegin() { return reverse_iterator(end()); }
+reverse_iterator
+rend() { return reverse_iterator(begin()); }
+```
+
+逆向迭代器的5种`associated type`与正向迭代器相对，其实现是通过呼叫正向迭代器的方法，重新定义逻辑，本质上算是个适配器Iterator Adapter。其源码如下：
+
+``` cpp
+template <class Iterator>
+class reverse_iterator {
+protected:
+    Iterator current;
+public:
+    typedef typename iterator_traits<Iterator>::iterator_category iterator_category;
+    ...
+	typedef Iterator iterator_type;
+    typedef reverse_iterator<Iterator> self;
+public:
+    explict reverse_iterator(iterator_type x):current(x) {}
+    reverse_iterator(const self& x):current(x.current) {}
+    iterator_type base() const { return current; }
+    reference operator* () const { Iterator tmp = current; retunr *--tmp; }
+    pointer operator-> () const { return &(operator*()); }
+    self& operator++ () { --current; return *this; }
+    self& operator-- () { ++current; return *this; }
+    self operator+ (difference_type n) { return self(current - n); }
+    self operator- (difference_type n) { return self(current + n); }
+}
+```
+
