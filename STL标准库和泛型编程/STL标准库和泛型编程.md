@@ -1376,3 +1376,48 @@ public:
 }
 ```
 
+
+
+### inserter
+
+`copy`函数是算法库中写好的一个模板算法，传入了三个迭代器`first、last、result`，能够将`[first, last)`中的数据复制到以`result`为首部的空间里，如果是简单的调用`copy(bar.begin(), bar.end(), it)`，那么`it `后的数据会被覆盖掉，而不是插入的效果。所以下图中，使用到了`insert`迭代器适配器，它重载了运算符`=`，达到了在不修改算法代码的前提下，修改算法逻辑的效果。
+
+<img src="./picture/迭代器适配器inserter.png">
+
+
+
+### ostream_iterator
+
+```cpp
+#include <iostream>
+#include <iterator>
+#include <vector>
+#include <algorithm>
+
+int main() {
+    std::vector<int> myvector;
+    for(int i=1; i < 10; ++i) myvector.push_back(i*10);
+    std::ostream_iterator<int> out_it(std::cout, ",");
+    std::copy(myvector.begin(), myvector.end(), out_it);
+    return 0;
+}
+/*
+10,20,30,40,50,60,70,80,90,
+*/
+```
+
+ `ostream_iterator`可以说是个输出流适配器，也可以说是个迭代器适配器或其他。从输出结果看来，`out_it`它能够做到将`myvector`中的数据输出，并用分隔符`,`分隔开来。要知道`copy`算法内的代码是不变的，所以其实现是由`ostream_iterator`完成的。
+
+原理和`inserter`类似，也是通过运算符重载实现的，其主要代码如下：
+
+``` cpp
+ostream_iterator<T, charT, traits>& 
+operator= (const T& value) {
+    *out_stream << value;
+    if(delim != 0) *out_stream << delim;
+    return *this;
+}
+```
+
+<img src="./picture/ostream_iterator.png">
+
