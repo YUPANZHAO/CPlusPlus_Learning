@@ -1421,3 +1421,10 @@ operator= (const T& value) {
 
 <img src="./picture/ostream_iterator.png">
 
+
+
+### istream_iterator
+
+`istream_iterator`在创建时，构造函数传入`std::cin`后，它立即就调用了`++*this`，在重载运算符`operator++`里，通过`*in_stream >> value`读取一个数据，而在主函数里，通过`value1 = *iit`即可获取到读取的数据值。
+
+<img src="./picture/istream_iterator.png">
