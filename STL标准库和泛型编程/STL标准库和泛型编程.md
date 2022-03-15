@@ -1428,3 +1428,24 @@ operator= (const T& value) {
 `istream_iterator`在创建时，构造函数传入`std::cin`后，它立即就调用了`++*this`，在重载运算符`operator++`里，通过`*in_stream >> value`读取一个数据，而在主函数里，通过`value1 = *iit`即可获取到读取的数据值。
 
 <img src="./picture/istream_iterator.png">
+
+
+
+## 一个万用的Hash Function
+
+对于我们自己定义的一个class或struct，有时需要转换成一个Hash Code，这时我们就需要自己编写一个Hash Function，其主要做到的就是让计算出来的Hash Code尽可能的“乱”，例如对于一个类Customer，拥有的成员如下：
+
+``` cpp
+class Customer {
+public:
+    string fname;
+    string lname;
+    long no;
+};
+```
+
+如果Hash函数设计成`hash<string>()(fname) + hash<string>()(lname) + hash<long>()(no)`， 那就过于简单了，其结果不够“混乱”。对于一个含有多种不同类型的成员的对象来说，要设计一个Hash Function，可以结合`函数参数包`来实现。代码如下：
+
+<img src="./picture/HashFunction.png">
+
+可变参数模板的相关知识可参考`C++ Primer Plus`的第827页。
