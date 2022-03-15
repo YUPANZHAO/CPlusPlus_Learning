@@ -1449,3 +1449,31 @@ public:
 <img src="./picture/HashFunction.png">
 
 可变参数模板的相关知识可参考`C++ Primer Plus`的第827页。
+
+
+
+## Tuple
+
+tuple能够存储一个多元组，其中的元素个数不定，元素的类型也可各不相同。
+
+其具体实现也是通过上面写到的可变参数模板实现的，其代码如下:
+
+``` cpp
+template <typename... Value> class tuple;
+template<> class tuple<> {};
+
+template <typename Head, typename... Tail>
+class tuple<Head, Tail...> : private tuple<Tail...> {
+    typedef tuple<Tail...> inherited;
+public:
+    tuple() {}
+   	tuple(Head v, Tail... vtail) : m_head(v), inherited(vtail) {}
+    typename Head::type head() { return m_head; }
+    inherited& tail() { return *this; }
+protected:
+    Head m_head;
+};
+```
+
+在创建一个多参数模板时，会继承一个除去头个参数类型的模板，一直继承到`tuple<>`。
+
