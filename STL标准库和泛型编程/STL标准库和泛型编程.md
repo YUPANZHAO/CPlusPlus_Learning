@@ -1477,3 +1477,84 @@ protected:
 
 在创建一个多参数模板时，会继承一个除去头个参数类型的模板，一直继承到`tuple<>`。
 
+
+
+## type_traits
+
+type_traits在G2.9版本，用于询问某类型是否有`trivial`的默认构造、拷贝构造等函数，通过特化的技巧实现。这仅是对于内置的数据类型而言，如果是对于一个用户自定义的数据类型来说，需要用户自己编写`__type_traits<>`的特化版本。其代码如下：
+
+``` cpp
+struct __true_type {};
+struct __false_type {};
+    
+template <class type>
+struct __type_traits {
+    typedef __true_type this_dummy_member_must_be_first;
+    typedef __false_type has_trivial_default_constructor;
+    typedef __false_type has_trivial_copy_constructor;
+    typedef __false_type has_trivial_assignment_operator;
+    typedef __false_type has_trivial_destructor;
+    typedef __false_type is_POD_type;	
+};
+
+template <> struct __type_traits<int> {
+    typedef __true_type has_trivial_default_constructor;
+    typedef __true_type has_trivial_copy_constructor;
+    typedef __true_type has_trivial_assignment_operator;
+    typedef __true_type has_trivial_destructor;
+    typedef __true_type is_POD_type;	
+};
+
+template <> struct __type_traits<double> {
+    typedef __true_type has_trivial_default_constructor;
+    typedef __true_type has_trivial_copy_constructor;
+    typedef __true_type has_trivial_assignment_operator;
+    typedef __true_type has_trivial_destructor;
+    typedef __true_type is_POD_type;	
+};
+```
+
+到了C++11版本，type_traits提供了更完整的类型询问机制，能够询问一个类型的所有细节，用户不再需要自己编写特化版本的type_traits。
+
+<img src="./picture/type_traits.png">
+
+C++11版本的type_traits的背后实现技巧仍然是利用了模板的特化及偏特化，拿最简单的例子`is_void`举例，在通过`remove_cv`移除掉传入类型的`const`和`volatile`后，利用模板特化特性，如果类型为`void`则会继承`true_type`类型，其代码如下：
+
+``` cpp
+template <typename> struct __is_void_helper : public false_type	{};
+template <> struct __is_void_helper<void> : public true_type {};
+template <typename _Tp> struct is_void
+    : public __is_void_helper<typename remove_cv<Tp>::type>::type {};
+```
+
+而`remove_cv`背后是实现也是通过模板特化及偏特化，其代码如下：
+
+``` cpp
+// remove_const
+template <typename _Tp>
+struct remove_const {
+    typedef _Tp type;
+};
+template <typename _Tp>
+struct remove_const<_Tp const> {
+    typedef _Tp type;
+};
+
+// remove_volatile
+template <typename _Tp>
+struct remove_volatile {
+    typedef _Tp type;
+};
+template <typename _Tp>
+struct remove_volatile<_Tp volatile> {
+    typedef _Tp type;
+};
+
+// remove_cv
+template <typename _Tp>
+struct remove_cv {
+	typedef typename
+	remove_const<typename remove_volatile<_Tp>::type>::type	type;
+};
+```
+
