@@ -11,19 +11,19 @@ int main() {
     WSADATA data;
     int ret = WSAStartup(MAKEWORD(2,2), &data);
     if(ret) {
-        cout << "³õÊ¼»¯ÍøÂç´íÎó£¡" << endl;
+        cout << "åˆå§‹åŒ–ç½‘ç»œé”™è¯¯ï¼" << endl;
         WSACleanup();
         return -1;
     }
-    cout << "³õÊ¼»¯ÍøÂç³É¹¦£¡" << endl;
+    cout << "åˆå§‹åŒ–ç½‘ç»œæˆåŠŸï¼" << endl;
     
     SOCKET server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if(server_socket == -1) {
-        cout << "´´½¨Ì×½Ó×ÖÊ§°Ü£¡" << endl;
+        cout << "åˆ›å»ºå¥—æŽ¥å­—å¤±è´¥ï¼" << endl;
         WSACleanup();
         return -1;
     }
-    cout << "´´½¨Ì×½Ó×Ö³É¹¦£¡" << endl;
+    cout << "åˆ›å»ºå¥—æŽ¥å­—æˆåŠŸï¼" << endl;
 
     sockaddr_in server_addr;
     server_addr.sin_family = AF_INET;
@@ -32,19 +32,19 @@ int main() {
     
     ret = bind(server_socket, (sockaddr *)&server_addr, sizeof(server_addr));
     if(ret == -1) {
-        cout << "°ó¶¨µØÖ·¶Ë¿ÚÊ§°Ü£¡" << endl;
+        cout << "ç»‘å®šåœ°å€ç«¯å£å¤±è´¥ï¼" << endl;
         WSACleanup();
         return -1;
     }
-    cout << "°ó¶¨µØÖ·¶Ë¿Ú³É¹¦£¡" << endl;
+    cout << "ç»‘å®šåœ°å€ç«¯å£æˆåŠŸï¼" << endl;
 
     ret = listen(server_socket, 5);
     if(ret == -1) {
-        cout << "¼àÌýÌ×½Ó×ÖÊ§°Ü£¡" << endl;
+        cout << "ç›‘å¬å¥—æŽ¥å­—å¤±è´¥ï¼" << endl;
         WSACleanup();
         return -1;
     }
-    cout << "¼àÌýÌ×½Ó×Ö³É¹¦£¡" << endl;
+    cout << "ç›‘å¬å¥—æŽ¥å­—æˆåŠŸï¼" << endl;
 
     while(true) {
 
@@ -52,18 +52,18 @@ int main() {
         int len = sizeof(client_addr);
         SOCKET client_socket = accept(server_socket, (sockaddr *)&client_addr, &len);
         if(client_socket == -1) {
-            cout << "½ÓÊÕ¿Í»§¶ËÁ¬½ÓÊ§°Ü£¡" << endl;
+            cout << "æŽ¥æ”¶å®¢æˆ·ç«¯è¿žæŽ¥å¤±è´¥ï¼" << endl;
             WSACleanup();
             return -1;
         }
-        cout << "¿Í»§¶ËÁ¬½Ó³É¹¦£¡" << endl;
+        cout << "å®¢æˆ·ç«¯è¿žæŽ¥æˆåŠŸï¼" << endl;
 
         const int BUFF_SIZE = 100;
         char buf[BUFF_SIZE];
         
         ret = recv(client_socket, buf, BUFF_SIZE, 0);
         if(ret <= 0) {
-            cout << "½ÓÊÜ¿Í»§¶ËÊý¾ÝÊ§°Ü£¡" << endl;
+            cout << "æŽ¥å—å®¢æˆ·ç«¯æ•°æ®å¤±è´¥ï¼" << endl;
             WSACleanup();
             return -1;
         }
@@ -72,11 +72,11 @@ int main() {
 
         ret = send(client_socket, buf, strlen(buf), 0);
         if(ret == -1) {
-            cout << "»Ø´«ÐÅÏ¢Ê§°Ü£¡" << endl;
+            cout << "å›žä¼ ä¿¡æ¯å¤±è´¥ï¼" << endl;
             WSACleanup();
             return -1;
         }
-        cout << "»Ø´«ÐÅÏ¢³É¹¦£¡" << endl;
+        cout << "å›žä¼ ä¿¡æ¯æˆåŠŸï¼" << endl;
 
     }
 

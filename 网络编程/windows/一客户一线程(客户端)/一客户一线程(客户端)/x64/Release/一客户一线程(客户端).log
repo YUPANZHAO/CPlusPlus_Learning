@@ -1,0 +1,8 @@
+﻿  client.cpp
+E:\CPlusPlus_Learning\网络编程\windows\一客户一线程(客户端)\一客户一线程(客户端)\client.cpp(55,54): warning C4267: “参数”: 从“size_t”转换到“int”，可能丢失数据
+  正在生成代码
+  1 of 102 functions ( 1.0%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    0 functions had inline decision re-evaluated but remain unchanged
+  已完成代码的生成
+  一客户一线程(客户端).vcxproj -> E:\CPlusPlus_Learning\网络编程\windows\一客户一线程(客户端)\x64\Release\一客户一线程(客户端).exe

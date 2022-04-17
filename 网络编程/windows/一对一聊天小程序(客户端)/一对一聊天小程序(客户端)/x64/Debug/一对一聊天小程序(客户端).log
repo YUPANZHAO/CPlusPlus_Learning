@@ -1,0 +1,3 @@
+﻿  client.cpp
+E:\CPlusPlus_Learning\网络编程\windows\一对一聊天小程序(客户端)\一对一聊天小程序(客户端)\client.cpp(17,58): warning C4267: “参数”: 从“size_t”转换到“int”，可能丢失数据
+  一对一聊天小程序(客户端).vcxproj -> E:\CPlusPlus_Learning\网络编程\windows\一对一聊天小程序(客户端)\x64\Debug\一对一聊天小程序(客户端).exe

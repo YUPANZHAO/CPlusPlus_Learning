@@ -1,0 +1,5 @@
+﻿  server.cpp
+E:\CPlusPlus_Learning\网络编程\windows\多人聊天室(服务端)\多人聊天室(服务端)\server.cpp(32,31): warning C4267: “=”: 从“size_t”转换到“int”，可能丢失数据
+E:\CPlusPlus_Learning\网络编程\windows\多人聊天室(服务端)\多人聊天室(服务端)\server.cpp(154,51): warning C4267: “参数”: 从“size_t”转换到“int”，可能丢失数据
+E:\CPlusPlus_Learning\网络编程\windows\多人聊天室(服务端)\多人聊天室(服务端)\server.cpp(158,44): warning C4267: “参数”: 从“size_t”转换到“int”，可能丢失数据
+  多人聊天室(服务端).vcxproj -> E:\CPlusPlus_Learning\网络编程\windows\多人聊天室(服务端)\x64\Debug\多人聊天室(服务端).exe
