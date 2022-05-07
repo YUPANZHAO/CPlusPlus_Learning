@@ -1,6 +1,7 @@
 #include "threadpool.h"
 #include <pthread.h>
 #include <malloc.h>
+#include <string.h>
 
 const int NUMBER = 2;
 
@@ -78,7 +79,8 @@ ThreadPool* threadPoolCreate(int min, int max, int queueSize) {
 
         //创建线程
         pthread_create(&pool->managerID, NULL, manager, pool);
-        for(int i=0; i < min; ++i) {
+        int i;
+        for(i=0; i < min; ++i) {
             pthread_create(&pool->threadIDs[i], NULL, worker, pool);
         }
         
@@ -175,8 +177,8 @@ void* manager(void* arg) {
         if(queueSize > liveNum && liveNum < pool->maxNum) {
             
             pthread_mutex_lock(&pool->mutexPool);
-            int counter = 0;
-            for(int i=0; i < pool->maxNum && counter < NUMBER
+            int counter = 0, i;
+            for(i=0; i < pool->maxNum && counter < NUMBER
                 && pool->liveNum < pool->maxNum; ++i) {
                 if(pool->threadIDs[i] == 0) {
                     pthread_create(&pool->threadIDs[i], NULL, worker, pool);        
@@ -194,7 +196,8 @@ void* manager(void* arg) {
             pool->exitNum = NUMBER;
             pthread_mutex_unlock(&pool->mutexPool);
             //让工作线程自杀
-            for(int i=0; i < NUMBER; ++i) {
+            int i;
+            for(i=0; i < NUMBER; ++i) {
                 pthread_cond_signal(&pool->notEmpty);
             }
         }
@@ -205,7 +208,8 @@ void* manager(void* arg) {
 
 void threadExit(ThreadPool* pool) {
     pthread_t tid = pthread_self();
-    for(int i=0; i < pool->maxNum; ++i) {
+    int i;
+    for(i=0; i < pool->maxNum; ++i) {
         if(pool->threadIDs[i] == tid) {
             pool->threadIDs[i] = 0;
             printf("threadExit() called, %ld exiting...\n", tid);
@@ -264,7 +268,8 @@ int threadPoolDestroy(ThreadPool* pool) {
     //阻塞回收管理者线程
     pthread_join(pool->managerID, NULL);
     //唤醒阻塞的消费者
-    for(int i=0; i < pool->liveNum; ++i) {
+    int i;
+    for(i=0; i < pool->liveNum; ++i) {
         pthread_cond_signal(&pool->notEmpty);
     }
     //唤醒阻塞的生产者
