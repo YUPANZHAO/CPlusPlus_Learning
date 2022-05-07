@@ -242,3 +242,42 @@ void threadPoolAdd(ThreadPool* pool, void (*func) (void*), void* arg) {
     
     pthread_mutex_unlock(&pool->mutexPool);
 }
+
+int threadPoolBusyNum(ThreadPool* pool) {
+    pthread_mutex_lock(&pool->mutexBusy);
+    int busyNum = pool->busyNum;
+    pthread_mutex_unlock(&pool->mutexBusy);
+    return busyNum;
+}
+
+int threadPoolAliveNum(ThreadPool* pool) {
+    pthread_mutex_lock(&pool->mutexPool);
+    int aliveNum = pool->liveNum;
+    pthread_mutex_unlock(&pool->mutexPool);
+    return aliveNum;
+}
+
+int threadPoolDestroy(ThreadPool* pool) {
+    if(pool == NULL) return -1;
+    //关闭线程池
+    pool->shutdown = 1;
+    //阻塞回收管理者线程
+    pthread_join(pool->managerID, NULL);
+    //唤醒阻塞的消费者
+    for(int i=0; i < pool->liveNum; ++i) {
+        pthread_cond_signal(&pool->notEmpty);
+    }
+    //唤醒阻塞的生产者
+    pthread_cond_signal(&pool->notFull);
+    //销毁互斥变量和条件变量
+    pthread_mutex_destroy(&pool->mutexBusy);
+    pthread_mutex_destroy(&pool->mutexPool);
+    pthread_cond_destroy(&pool->notEmpty);
+    pthread_cond_destroy(&pool->notFull);
+    //释放堆内存
+    if(pool->taskQ != NULL) free(pool->taskQ);
+    if(pool->threadIDs != NULL) free(pool->threadIDs);
+    free(pool);
+    pool = NULL;
+    return 0; 
+}
