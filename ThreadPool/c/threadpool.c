@@ -131,6 +131,7 @@ void* worker(void* arg) {
         pool->queueSize--;
 
         //解线程池锁
+        pthread_cond_signal(&pool->notFull);
         pthread_mutex_unlock(&pool->mutexPool);
 
         //执行任务
@@ -195,7 +196,7 @@ void* manager(void* arg) {
             //让工作线程自杀
             for(int i=0; i < NUMBER; ++i) {
                 pthread_cond_signal(&pool->notEmpty);
-            }            
+            }
         }
     }
 
@@ -212,4 +213,32 @@ void threadExit(ThreadPool* pool) {
         }
     }
     pthread_exit(NULL);
+}
+
+void threadPoolAdd(ThreadPool* pool, void (*func) (void*), void* arg) {
+    pthread_mutex_lock(&pool->mutexPool);
+    
+    //判断队列是否满了
+    while(pool->queueSize == pool->queueCapacity && !pool->shutdown) {
+        //阻塞生产者线程
+        pthread_cond_wait(&pool->notFull, &pool->mutexPool);
+    }
+
+    //判断线程池是否被关闭
+    if(pool->shutdown) {
+        pthread_mutex_unlock(&pool->mutexPool);
+        return;
+    }
+
+    //添加任务
+    pool->taskQ[pool->queueRear].function = func;
+    pool->taskQ[pool->queueRear].arg = arg;
+
+    //移动尾节点
+    pool->queueRear = (pool->queueRear + 1) % pool->queueCapacity;
+    pool->queueSize++;
+
+    pthread_cond_signal(&pool->notEmpty);
+    
+    pthread_mutex_unlock(&pool->mutexPool);
 }

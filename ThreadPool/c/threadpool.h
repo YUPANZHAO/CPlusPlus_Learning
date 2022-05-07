@@ -6,6 +6,9 @@ typedef struct ThreadPool ThreadPool;
 //创建线程池
 ThreadPool* threadPoolCreate(int min, int max, int queueSize);
 
+//给线程池添加任务
+void threadPoolAdd(ThreadPool* pool, void (*func) (void*), void* arg);
+
 //工作者线程
 void* worker(void* arg);
 
