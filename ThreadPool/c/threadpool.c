@@ -107,15 +107,18 @@ void* worker(void* arg) {
             //判断是不是要销毁线程
             if(pool->exitNum > 0) {
                 pool->exitNum--;
-                pthread_mutex_unlock(&pool->mutexPool);
-                pthread_exit(NULL);
+                if(pool->liveNum > pool->minNum) {
+                    pool->liveNum--;
+                    pthread_mutex_unlock(&pool->mutexPool);
+                    threadExit(pool);
+                }   
             }
         }
 
         //判断线程池是否被关闭
         if(pool->shutdown) {
             pthread_mutex_unlock(&pool->mutexPool);
-            pthread_exit(NULL);
+            threadExit(pool);
         }
 
         //从任务队列中取出一个任务
@@ -197,4 +200,16 @@ void* manager(void* arg) {
     }
 
     return NULL;
+}
+
+void threadExit(ThreadPool* pool) {
+    pthread_t tid = pthread_self();
+    for(int i=0; i < pool->maxNum; ++i) {
+        if(pool->threadIDs[i] == tid) {
+            pool->threadIDs[i] = 0;
+            printf("threadExit() called, %ld exiting...\n", tid);
+            break;
+        }
+    }
+    pthread_exit(NULL);
 }

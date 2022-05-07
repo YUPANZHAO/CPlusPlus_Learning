@@ -12,4 +12,7 @@ void* worker(void* arg);
 //管理者线程
 void* manager(void* arg);
 
+//线程退出函数
+void threadExit(ThreadPool* pool);
+
 #endif
