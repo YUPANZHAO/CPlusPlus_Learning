@@ -57,7 +57,7 @@ ThreadPool* threadPoolCreate(int min, int max, int queueSize) {
         pool->exitNum = 0;
         
         if( pthread_mutex_init(&pool->mutexPool, NULL) != 0 ||
-            pthread_mutex_init(&pool->mutexPool, NULL) != 0 ||
+            pthread_mutex_init(&pool->mutexBusy, NULL) != 0 ||
             pthread_cond_init(&pool->notFull, NULL) != 0 ||
             pthread_cond_init(&pool->notEmpty, NULL) != 0) {
             printf("mutex or cond init fail...");
