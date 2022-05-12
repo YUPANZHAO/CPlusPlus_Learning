@@ -4,31 +4,33 @@
 
 using callback = void (*) (void* arg);
 //任务结构体
+template <class T>
 struct Task {
     callback function;
-    void* arg;
+    T* arg;
     Task() {
         function = nullptr;
         arg = nullptr;
     }
     Task(callback f, void* arg) {
         function = f;
-        this->arg = arg;
+        this->arg = (T*)arg;
     }
 };
 //任务队列
+template <class T>
 class TaskQueue {
 public:
     TaskQueue();
     ~TaskQueue();
     //添加任务
-    void addTask(Task task);
+    void addTask(Task<T> task);
     void addTask(callback f, void* arg);
     //取出任务
-    Task takeTask();
+    Task<T> takeTask();
     //获取当前任务个数
-    inline int taskNumber();
+    inline size_t taskNumber() { return m_taskQ.size(); }
 private:
-    std::queue<Task> m_taskQ;
+    std::queue<Task<T>> m_taskQ;
     pthread_mutex_t m_mutex;
 };
