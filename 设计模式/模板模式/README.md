@@ -22,16 +22,16 @@
 classDiagram
   class Library {
     +Run() void
-    +virtual ~Library(); 
+    ~Library()* 
     #Step1() void
     #Step3() void
     #Step5() void
-    #Step2()* bool
-    #Step4()* void
+    Step2()* bool
+    Step4()* void
   }
   class Application {
-    #Step2()* bool
-    #Step4()* void
+    Step2()* bool
+    Step4()* void
   }
   Library <|-- Application 
 ```
